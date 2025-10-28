@@ -1,12 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 
+// API endpoints for different search types
 const API = {
   searchByIngredient: (ingredient) =>
-    `https://www.themealdb.com/api/json/v1/1/filter.php?i=${encodeURIComponent(ingredient)}`,
-  lookupById: (id) =>
-    `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${id}`,
+    `https://www.themealdb.com/api/json/v1/1/filter.php?i=${encodeURIComponent(
+      ingredient
+    )}`,
+  searchByName: (name) =>
+    `https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(
+      name
+    )}`,
+  searchByCategory: (category) =>
+    `https://www.themealdb.com/api/json/v1/1/filter.php?c=${encodeURIComponent(
+      category
+    )}`,
+  lookupById: (id) => `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${id}`,
 };
 
+// Local storage hook for favorites
 function useLocalStorage(key, initial) {
   const [state, setState] = useState(() => {
     try {
@@ -23,36 +34,59 @@ function useLocalStorage(key, initial) {
 }
 
 export default function App() {
-  const [query, setQuery] = useState('chicken');
+  const [query, setQuery] = useState("");
+  const [searchType, setSearchType] = useState("ingredient");
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedMeal, setSelectedMeal] = useState(null);
-  const [favorites, setFavorites] = useLocalStorage('favorites', []);
+  const [favorites, setFavorites] = useLocalStorage("favorites", []);
 
   useEffect(() => {
-    fetchMeals('chicken');
+    fetchMeals("chicken", "ingredient"); // default search
   }, []);
 
-  async function fetchMeals(ingredient) {
+  // 🔍 Fetch meals dynamically based on search type
+  async function fetchMeals(value, type) {
+    if (!value.trim()) {
+      setError("Please enter a search term.");
+      setMeals([]);
+      return;
+    }
+
     setLoading(true);
     setError(null);
+
     try {
-      const res = await fetch(API.searchByIngredient(ingredient));
+      let url;
+      switch (type) {
+        case "meal":
+          url = API.searchByName(value);
+          break;
+        case "category":
+          url = API.searchByCategory(value);
+          break;
+        default:
+          url = API.searchByIngredient(value);
+      }
+
+      const res = await fetch(url);
       const data = await res.json();
+
       if (!data.meals) {
         setMeals([]);
-        setError('No recipes found.');
+        setError("No recipes found 😕");
       } else {
         setMeals(data.meals);
       }
-    } catch {
-      setError('Failed to fetch recipes.');
+    } catch (err) {
+      setError("Failed to fetch recipes.");
     } finally {
       setLoading(false);
     }
   }
 
+  // 🍲 Fetch full meal details
   async function openMealDetails(id) {
     setSelectedMeal(null);
     setLoading(true);
@@ -61,12 +95,13 @@ export default function App() {
       const data = await res.json();
       setSelectedMeal(data.meals[0]);
     } catch {
-      setError('Failed to load details.');
+      setError("Failed to load details.");
     } finally {
       setLoading(false);
     }
   }
 
+  // 💖 Add or remove from favorites
   function toggleFavorite(meal) {
     const exists = favorites.find((m) => m.idMeal === meal.idMeal);
     if (exists) {
@@ -75,23 +110,41 @@ export default function App() {
       setFavorites([...favorites, meal]);
     }
   }
-
-  return (
-    <div className="app">
+  
+  const [darkMode, setDarkMode] = useState(false);
+   return (
+    <div className={`app ${darkMode ? "dark" : ""}`}>
       <header>
-        <h1>🍳 Recipe Ideas</h1>
-        <p>Find easy meals by ingredient</p>
+        <h1>🍰 Recipe Finder</h1>
+        <p>From Pinterest inspo → Reality 🌸</p>
+
+        {/* 🌙 Dark Mode Toggle */}
+        <button className="toggle-btn" onClick={() => setDarkMode(!darkMode)}>
+          {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
+        </button>
       </header>
 
+
+
       <div className="search">
+        <select
+          value={searchType}
+          onChange={(e) => setSearchType(e.target.value)}
+        >
+          <option value="ingredient">Ingredient</option>
+          <option value="meal">Meal Name</option>
+          <option value="category">Category</option>
+        </select>
+
         <input
-          placeholder="e.g. chicken, rice, tomato"
+          placeholder={`Search by ${searchType}`}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && fetchMeals(query)}
+          onKeyDown={(e) => e.key === "Enter" && fetchMeals(query, searchType)}
         />
-        <button onClick={() => fetchMeals(query)} disabled={loading}>
-          Search
+
+        <button onClick={() => fetchMeals(query, searchType)} disabled={loading}>
+          {loading ? "Searching..." : "Search"}
         </button>
       </div>
 
@@ -110,8 +163,8 @@ export default function App() {
                 </button>
                 <button onClick={() => toggleFavorite(meal)}>
                   {favorites.find((m) => m.idMeal === meal.idMeal)
-                    ? 'Unfavorite'
-                    : 'Favorite'}
+                    ? "Unfavorite"
+                    : "Favorite"}
                 </button>
               </div>
             </div>
@@ -157,9 +210,7 @@ export default function App() {
                   })}
                 </ul>
                 <h4>Instructions</h4>
-                <p className="instructions">
-                  {selectedMeal.strInstructions}
-                </p>
+                <p className="instructions">{selectedMeal.strInstructions}</p>
               </div>
             ) : (
               <p>Select a meal to view details</p>
