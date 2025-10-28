@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-// API endpoints for different search types
+
 const API = {
   searchByIngredient: (ingredient) =>
     `https://www.themealdb.com/api/json/v1/1/filter.php?i=${encodeURIComponent(
@@ -17,7 +17,6 @@ const API = {
   lookupById: (id) => `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${id}`,
 };
 
-// Local storage hook for favorites
 function useLocalStorage(key, initial) {
   const [state, setState] = useState(() => {
     try {
@@ -43,10 +42,10 @@ export default function App() {
   const [favorites, setFavorites] = useLocalStorage("favorites", []);
 
   useEffect(() => {
-    fetchMeals("chicken", "ingredient"); // default search
+    fetchMeals("chicken", "ingredient");
   }, []);
 
-  // 🔍 Fetch meals dynamically based on search type
+  
   async function fetchMeals(value, type) {
     if (!value.trim()) {
       setError("Please enter a search term.");
@@ -86,7 +85,7 @@ export default function App() {
     }
   }
 
-  // 🍲 Fetch full meal details
+  
   async function openMealDetails(id) {
     setSelectedMeal(null);
     setLoading(true);
@@ -101,7 +100,7 @@ export default function App() {
     }
   }
 
-  // 💖 Add or remove from favorites
+
   function toggleFavorite(meal) {
     const exists = favorites.find((m) => m.idMeal === meal.idMeal);
     if (exists) {
@@ -118,7 +117,7 @@ export default function App() {
         <h1>🍰 Recipe Finder</h1>
         <p>From Pinterest inspo → Reality 🌸</p>
 
-        {/* 🌙 Dark Mode Toggle */}
+      
         <button className="toggle-btn" onClick={() => setDarkMode(!darkMode)}>
           {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
         </button>
